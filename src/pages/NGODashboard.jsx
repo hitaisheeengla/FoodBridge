@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import mockDonations from '../mock/mockDonations';
+import { donationService } from '../services/api';
 
 const NGODashboard = () => {
   // Mock data - in a real app, this would come from an API
@@ -12,7 +12,29 @@ const NGODashboard = () => {
     restaurantPartners: 12,
   });
 
-  const [nearbyDonations] = useState(mockDonations);
+
+  const [nearbyDonations, setNearbyDonations] = useState([]);
+  const [loadingDonations, setLoadingDonations] = useState(true);
+  const [donationError, setDonationError] = useState('');
+
+  useEffect(() => {
+    const fetchDonations = async () => {
+      try {
+        const data = await donationService.getDonations();
+        setNearbyDonations(Array.isArray(data) ? data : []);
+      } catch (error) {
+        setDonationError(
+          error.response?.data?.message ||
+          'Could not load available donations.'
+        );
+      } finally {
+        setLoadingDonations(false);
+      }
+    };
+
+    fetchDonations();
+  }, []);
+
 
   const [scheduledPickups] = useState([
     {
@@ -84,7 +106,7 @@ const NGODashboard = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="col-md-4 mb-4 mb-md-0">
           <div className="card border-0 shadow h-100">
             <div className="card-body">
@@ -109,7 +131,7 @@ const NGODashboard = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="col-md-4">
           <div className="card border-0 shadow h-100">
             <div className="card-body">
@@ -143,32 +165,78 @@ const NGODashboard = () => {
             <div className="card-header bg-white py-3">
               <h5 className="mb-0 fw-bold">Nearby Donations</h5>
             </div>
+
             <div className="card-body">
-              {nearbyDonations.length > 0 ? (
+              {loadingDonations ? (
+                <p className="text-muted">Loading available donations...</p>
+              ) : donationError ? (
+                <div className="alert alert-danger">{donationError}</div>
+              ) : nearbyDonations.length > 0 ? (
                 <div className="row">
-                  {nearbyDonations.map(donation => (
-                    <div key={donation.id} className="col-md-6 col-xl-4 mb-4">
-                      <div className="card border-0 shadow-sm h-100 position-relative">
-                        {donation.isNew && (
-                          <div className="position-absolute top-0 end-0 mt-2 me-2">
-                            <span className="badge bg-danger">New</span>
-                          </div>
-                        )}
+                  {nearbyDonations.map((donation) => (
+                    <div
+                      key={donation._id}
+                      className="col-md-6 col-xl-4 mb-4"
+                    >
+                      <div className="card border-0 shadow-sm h-100">
                         <div className="card-body">
-                          <h5 className="card-title">{donation.restaurantName}</h5>
+                          <h5 className="card-title">
+                            {donation.donor?.name || 'Restaurant'}
+                          </h5>
+
+                          <p className="card-text">
+                            <strong>Food Type:</strong> {donation.foodType}
+                          </p>
+
                           <p className="card-text">
                             <strong>Food Items:</strong> {donation.foodItems}
                           </p>
-                          <div className="d-flex justify-content-between mb-2">
-                            <span><i className="fas fa-weight me-1"></i> {donation.quantity}</span>
-                            <span><i className="fas fa-map-marker-alt me-1"></i> {donation.distance}</span>
-                          </div>
-                          <div className="d-flex justify-content-between mb-3">
-                            <span><i className="fas fa-clock me-1"></i> Expires in: {donation.expiryTime}</span>
-                            <span><i className="fas fa-hourglass-half me-1"></i> {donation.pickupWindow}</span>
-                          </div>
+
+                          <p className="card-text">
+                            <i className="fas fa-weight me-1"></i>
+                            {donation.quantity} {donation.quantityUnit || 'kg'}
+                          </p>
+
+                          <p className="card-text">
+                            <i className="fas fa-map-marker-alt me-1"></i>
+                            {donation.location}
+                          </p>
+
+                          <p className="card-text">
+                            <i className="fas fa-calendar me-1"></i>
+                            Pickup Date:{' '}
+                            {donation.pickupDate
+                              ? new Date(donation.pickupDate).toLocaleDateString()
+                              : 'Not specified'}
+                          </p>
+
+                          <p className="card-text">
+                            <i className="fas fa-clock me-1"></i>
+                            Pickup Window:{' '}
+                            {donation.pickupStartTime} - {donation.pickupEndTime}
+                          </p>
+
+                          {donation.allergenInfo && (
+                            <p className="card-text">
+                              <strong>Allergens:</strong> {donation.allergenInfo}
+                            </p>
+                          )}
+
+                          {donation.dietaryInfo && (
+                            <p className="card-text">
+                              <strong>Dietary Info:</strong> {donation.dietaryInfo}
+                            </p>
+                          )}
+
                           <div className="d-grid">
-                            <button className="btn btn-primary">Request Pickup</button>
+                            <button
+                              className="btn btn-primary"
+                              onClick={() =>
+                                alert('Pickup requests are not implemented yet.')
+                              }
+                            >
+                              Request Pickup
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -177,10 +245,11 @@ const NGODashboard = () => {
                 </div>
               ) : (
                 <div className="alert alert-info">
-                  No nearby donations available at the moment. Check back later!
+                  No available donations at the moment. Check back later!
                 </div>
               )}
             </div>
+
             <div className="card-footer bg-white text-center">
               <Link to="/donations" className="text-decoration-none">View All Available Donations</Link>
             </div>

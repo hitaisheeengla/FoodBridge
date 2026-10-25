@@ -4,7 +4,7 @@ import { donationService } from '../services/api';
 
 const ListDonation = () => {
   const navigate = useNavigate();
-  
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const [year, month, day] = dateString.split('-');
@@ -16,6 +16,7 @@ const ListDonation = () => {
     foodItems: '',
     quantity: '',
     quantityUnit: 'kg',
+    location: '',
     estimatedMeals: '',
     pickupDate: '',
     pickupStartTime: '',
@@ -25,7 +26,7 @@ const ListDonation = () => {
     additionalInfo: '',
     agreeToTerms: false
   });
-  
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -40,22 +41,22 @@ const ListDonation = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.foodType) newErrors.foodType = "Food type is required";
     if (!formData.foodItems) newErrors.foodItems = "Food items description is required";
     if (!formData.quantity) newErrors.quantity = "Quantity is required";
     if (!formData.pickupDate) newErrors.pickupDate = "Pickup date is required";
     if (!formData.pickupStartTime) newErrors.pickupStartTime = "Pickup start time is required";
     if (!formData.pickupEndTime) newErrors.pickupEndTime = "Pickup end time is required";
-    
+
     // Check if pickup end time is after start time
-    if (formData.pickupStartTime && formData.pickupEndTime && 
-        formData.pickupStartTime >= formData.pickupEndTime) {
+    if (formData.pickupStartTime && formData.pickupEndTime &&
+      formData.pickupStartTime >= formData.pickupEndTime) {
       newErrors.pickupEndTime = "End time must be after start time";
     }
-    
+
     if (!formData.agreeToTerms) newErrors.agreeToTerms = "You must agree to the terms";
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -94,21 +95,26 @@ const ListDonation = () => {
         throw new Error('Pickup end time must be after start time');
       }
 
-      await donationService.createDonation({
-        ...formData,
-        pickupDate: pickupDate.toISOString(),
-        pickupStartTime: formData.pickupStartTime,
-        pickupEndTime: formData.pickupEndTime,
-        restaurant: user.id,
-      });
+      
+await donationService.createDonation({
+  ...formData,
+  quantity: Number(formData.quantity),
+  estimatedMeals: formData.estimatedMeals
+    ? Number(formData.estimatedMeals)
+    : undefined,
+  pickupDate: new Date(
+    `${formData.pickupDate}T00:00:00`
+  ).toISOString()
+});
+
 
       navigate('/restaurant/dashboard', {
         state: { successMessage: 'Your donation has been listed successfully!' }
       });
     } catch (err) {
       console.error('Error creating donation:', err);
-      setErrors({ 
-        submit: err.response?.data?.message || err.message || 'Failed to list donation. Please try again.' 
+      setErrors({
+        submit: err.response?.data?.message || err.message || 'Failed to list donation. Please try again.'
       });
       setLoading(false);
       setPreviewMode(false);
@@ -152,7 +158,7 @@ const ListDonation = () => {
               <i className="fas fa-info-circle me-2"></i>
               Please review your donation details before submitting.
             </div>
-            
+
             <div className="row mb-4">
               <div className="col-md-6">
                 <h5 className="border-bottom pb-2 mb-3">Food Information</h5>
@@ -163,7 +169,7 @@ const ListDonation = () => {
                 <p><strong>Dietary Information:</strong> {formData.dietaryInfo || 'Not specified'}</p>
                 <p><strong>Allergen Information:</strong> {formData.allergenInfo || 'Not specified'}</p>
               </div>
-              
+
               <div className="col-md-6">
                 <h5 className="border-bottom pb-2 mb-3">Pickup Information</h5>
                 <p><strong>Pickup Date:</strong> {formatDate(formData.pickupDate)}</p>
@@ -171,18 +177,18 @@ const ListDonation = () => {
                 <p><strong>Additional Information:</strong> {formData.additionalInfo || 'Not specified'}</p>
               </div>
             </div>
-            
+
             <div className="d-flex justify-content-between">
-              <button 
-                type="button" 
-                className="btn btn-outline-secondary" 
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
                 onClick={handleEdit}
               >
                 <i className="fas fa-edit me-2"></i>Edit
               </button>
-              <button 
-                type="button" 
-                className="btn btn-primary" 
+              <button
+                type="button"
+                className="btn btn-primary"
                 onClick={handleSubmit}
                 disabled={loading}
               >
@@ -218,20 +224,20 @@ const ListDonation = () => {
                   {errors.submit}
                 </div>
               )}
-              
+
               <form onSubmit={handleReview}>
                 <div className="row mb-4">
                   <div className="col-12">
                     <h5 className="border-bottom pb-2 mb-3">Food Information</h5>
                   </div>
-                  
+
                   <div className="col-md-6 mb-3">
                     <label htmlFor="foodType" className="form-label">Food Type <span className="text-danger">*</span></label>
-                    <select 
+                    <select
                       className={`form-select ${errors.foodType ? 'is-invalid' : ''}`}
-                      id="foodType" 
-                      name="foodType" 
-                      value={formData.foodType} 
+                      id="foodType"
+                      name="foodType"
+                      value={formData.foodType}
                       onChange={handleChange}
                     >
                       <option value="">-- Select Food Type --</option>
@@ -241,14 +247,14 @@ const ListDonation = () => {
                     </select>
                     {errors.foodType && <div className="invalid-feedback">{errors.foodType}</div>}
                   </div>
-                  
+
                   <div className="col-md-6 mb-3">
                     <label htmlFor="dietaryInfo" className="form-label">Dietary Information</label>
-                    <select 
-                      className="form-select" 
-                      id="dietaryInfo" 
-                      name="dietaryInfo" 
-                      value={formData.dietaryInfo} 
+                    <select
+                      className="form-select"
+                      id="dietaryInfo"
+                      name="dietaryInfo"
+                      value={formData.dietaryInfo}
                       onChange={handleChange}
                     >
                       <option value="">-- Select Dietary Information --</option>
@@ -257,35 +263,35 @@ const ListDonation = () => {
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className="col-12 mb-3">
                     <label htmlFor="foodItems" className="form-label">Food Items Description <span className="text-danger">*</span></label>
-                    <textarea 
+                    <textarea
                       className={`form-control ${errors.foodItems ? 'is-invalid' : ''}`}
-                      id="foodItems" 
-                      name="foodItems" 
-                      placeholder="E.g., 'Rice, Mixed Vegetables, Chicken Curry'" 
+                      id="foodItems"
+                      name="foodItems"
+                      placeholder="E.g., 'Rice, Mixed Vegetables, Chicken Curry'"
                       rows="2"
-                      value={formData.foodItems} 
+                      value={formData.foodItems}
                       onChange={handleChange}
                     ></textarea>
                     {errors.foodItems && <div className="invalid-feedback">{errors.foodItems}</div>}
                   </div>
-                  
+
                   <div className="col-md-4 mb-3">
                     <label htmlFor="quantity" className="form-label">Quantity <span className="text-danger">*</span></label>
                     <div className="input-group">
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         className={`form-control ${errors.quantity ? 'is-invalid' : ''}`}
-                        id="quantity" 
-                        name="quantity" 
+                        id="quantity"
+                        name="quantity"
                         min="1"
-                        value={formData.quantity} 
+                        value={formData.quantity}
                         onChange={handleChange}
                       />
-                      <select 
-                        className="form-select" 
+                      <select
+                        className="form-select"
                         id="quantityUnit"
                         name="quantityUnit"
                         value={formData.quantityUnit}
@@ -299,103 +305,122 @@ const ListDonation = () => {
                       {errors.quantity && <div className="invalid-feedback">{errors.quantity}</div>}
                     </div>
                   </div>
-                  
+
                   <div className="col-md-4 mb-3">
                     <label htmlFor="estimatedMeals" className="form-label">Estimated Meals</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       className="form-control"
-                      id="estimatedMeals" 
-                      name="estimatedMeals" 
+                      id="estimatedMeals"
+                      name="estimatedMeals"
                       min="1"
                       placeholder="Optional"
-                      value={formData.estimatedMeals} 
+                      value={formData.estimatedMeals}
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="col-md-4 mb-3">
                     <label htmlFor="allergenInfo" className="form-label">Allergen Information</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       className="form-control"
-                      id="allergenInfo" 
-                      name="allergenInfo" 
+                      id="allergenInfo"
+                      name="allergenInfo"
                       placeholder="E.g., 'Contains nuts, dairy'"
-                      value={formData.allergenInfo} 
+                      value={formData.allergenInfo}
                       onChange={handleChange}
                     />
                   </div>
                 </div>
-                
+
                 <div className="row mb-4">
                   <div className="col-12">
                     <h5 className="border-bottom pb-2 mb-3">Pickup Information</h5>
                   </div>
-                  
+
 
                   <div className="col-md-4 mb-3">
                     <label htmlFor="pickupDate" className="form-label">Pickup Date <span className="text-danger">*</span></label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={formData.pickupDate}
                       className={`form-control ${errors.pickupDate ? 'is-invalid' : ''}`}
-                      id="pickupDate" 
-                      name="pickupDate" 
+                      id="pickupDate"
+                      name="pickupDate"
                       min={new Date().toISOString().split('T')[0]}
-                      
+
                       onChange={handleChange}
                     />
                     {errors.pickupDate && <div className="invalid-feedback">{errors.pickupDate}</div>}
                   </div>
-                  
+
                   <div className="col-md-4 mb-3">
                     <label htmlFor="pickupStartTime" className="form-label">Pickup Start Time <span className="text-danger">*</span></label>
-                    <input 
-                      type="time" 
+                    <input
+                      type="time"
                       className={`form-control ${errors.pickupStartTime ? 'is-invalid' : ''}`}
-                      id="pickupStartTime" 
-                      name="pickupStartTime" 
-                      value={formData.pickupStartTime} 
+                      id="pickupStartTime"
+                      name="pickupStartTime"
+                      value={formData.pickupStartTime}
                       onChange={handleChange}
                     />
                     {errors.pickupStartTime && <div className="invalid-feedback">{errors.pickupStartTime}</div>}
                   </div>
-                  
+
                   <div className="col-md-4 mb-3">
                     <label htmlFor="pickupEndTime" className="form-label">Pickup End Time <span className="text-danger">*</span></label>
-                    <input 
-                      type="time" 
+                    <input
+                      type="time"
                       className={`form-control ${errors.pickupEndTime ? 'is-invalid' : ''}`}
-                      id="pickupEndTime" 
-                      name="pickupEndTime" 
-                      value={formData.pickupEndTime} 
+                      id="pickupEndTime"
+                      name="pickupEndTime"
+                      value={formData.pickupEndTime}
                       onChange={handleChange}
                     />
                     {errors.pickupEndTime && <div className="invalid-feedback">{errors.pickupEndTime}</div>}
                   </div>
-                  
-                  <div className="col-12 mb-3">
+
+                  <div className="col-md-6 mb-3">
                     <label htmlFor="additionalInfo" className="form-label">Additional Information</label>
-                    <textarea 
+                    <textarea
                       className="form-control"
-                      id="additionalInfo" 
-                      name="additionalInfo" 
-                      placeholder="Any additional details for pickup or handling" 
+                      id="additionalInfo"
+                      name="additionalInfo"
+                      placeholder="Any additional details for pickup or handling"
                       rows="3"
-                      value={formData.additionalInfo} 
+                      value={formData.additionalInfo}
                       onChange={handleChange}
                     ></textarea>
+
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="location">Pickup Location *</label>
+                      <input
+                        id="location"
+                        name="location"
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            location: e.target.value
+                          })
+                        }
+                        placeholder="Enter the complete pickup address"
+                        required
+                      />
+                    </div>
+
                   </div>
                 </div>
-                
+
                 <div className="row mb-4">
                   <div className="col-12">
                     <div className={`form-check ${errors.agreeToTerms ? 'is-invalid' : ''}`}>
-                      <input 
-                        className="form-check-input" 
-                        type="checkbox" 
-                        id="agreeToTerms" 
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="agreeToTerms"
                         name="agreeToTerms"
                         checked={formData.agreeToTerms}
                         onChange={handleChange}
@@ -407,7 +432,7 @@ const ListDonation = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="row">
                   <div className="col-12 text-end">
                     <button type="button" className="btn btn-outline-secondary me-3" onClick={() => navigate('/restaurant/dashboard')}>

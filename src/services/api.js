@@ -132,13 +132,12 @@ export const authService = {
 
 // Donation services
 export const donationService = {
-  getAllDonations: async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(mockDonations);
-      }, 1000);
-    });
-  },
+  
+getDonations: async () => {
+  const response = await api.get('/donations');
+  return response.data;
+},
+
 
   getDonationById: async (id) => {
     return new Promise((resolve, reject) => {
@@ -154,18 +153,9 @@ export const donationService = {
   },
 
   createDonation: async (donationData) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newDonation = {
-          id: mockDonations.length + 1,
-          ...donationData,
-          status: 'available'
-        };
-        mockDonations.push(newDonation);
-        resolve(newDonation);
-      }, 1000);
-    });
-  },
+  const response = await api.post('/donations', donationData);
+  return response.data;
+},
 
   updateDonation: async (id, updateData) => {
     return new Promise((resolve, reject) => {

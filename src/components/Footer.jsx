@@ -41,7 +41,7 @@ const Footer = () => {
             <h5 className="text-uppercase mb-3">Contact Us</h5>
             <ul className="list-unstyled">
               <li className="mb-2">
-                <i className="fas fa-map-marker-alt me-2"></i> 123 City
+                <i className="fas fa-map-marker-alt me-2"></i> Indore, Madhya Pradesh
               </li>
               <li className="mb-2">
                 <i className="fas fa-phone me-2"></i> +91 (123) 456-7890
